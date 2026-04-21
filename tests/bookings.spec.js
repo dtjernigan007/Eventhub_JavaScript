@@ -1,7 +1,7 @@
 import {test, expect, request} from "@playwright/test";
 import {APIUtils} from "../Utils/APIUtils";
 
-const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
+// const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
 let eventId = 3;
 let numTix = 2;
 let api;
@@ -11,12 +11,13 @@ let token;
 test.beforeAll(async () => {
 
     const apiContext = await request.newContext();
+    const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
     api = new APIUtils(apiContext, userData);
     token = await api.login();
     // console.log(token);
 })
 
-test.only('Book Event', async() => {
+test('Book Event', async() => {
 
     let initialDetails = await api.getEventDetails(token, eventId);
     // console.log(initialDetails);
@@ -53,5 +54,13 @@ test('Cancel booking', async() => {
     let updatedBookings = await api.getBookings(token);
     let updatedNumBookings = updatedBookings.pagination.total;
     expect(updatedNumBookings).toEqual(numBookings - 1);
+
+});
+
+test.afterAll(async () => {
+
+    let response = await api.deleteAllBookings(token);
+    console.log(response)
+
 
 });
