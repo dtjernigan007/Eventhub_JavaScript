@@ -1,5 +1,3 @@
-const {request} = require("@playwright/test");
-
 class APIUtils {
 
 
