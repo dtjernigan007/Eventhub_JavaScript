@@ -55,7 +55,6 @@ test('Cancel booked event', async() => {
     await page.waitForLoadState('networkidle');
 
     let bookings = await page.locator("#booking-card .booking-ref").allTextContents();
-    let initialCount = bookings.length;
     expect(bookings).toContain(confirmationNumber);
     let card = await page.getByTestId('booking-card').nth(bookings.indexOf(confirmationNumber));
     await card.getByRole('button', { name: 'Cancel Booking' }).click();
