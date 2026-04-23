@@ -57,24 +57,13 @@ test('Verify new event', async() => {
     page.goto("https://eventhub.rahulshettyacademy.com/admin/events");
     await page.waitForLoadState('networkidle');
 
-    let rows = await page.locator("tbody > tr").all();
-    let rowNumber;
-    for(let i = 0; i < rows.length; i++) {
-        let title = await rows[i].locator("td:first-child").textContent();
-        console.log(title);
-        if(title === eventData.title) {
-            rowNumber = i + 1;
-            break;
-        }
-    }
-
     const usdFormatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
         maximumFractionDigits: 0,
     });
 
-    let eventRow = await page.locator(`tbody > tr:nth-child(${rowNumber})`);
+    let eventRow = await findEvent();
     await expect(eventRow.locator("td:nth-child(1)")).toHaveText(eventData.title);
     await expect(eventRow.locator("td:nth-child(2)")).toHaveText(eventData.category);
     await expect(eventRow.locator("td:nth-child(3)")).toHaveText(eventData.city);
@@ -85,6 +74,94 @@ test('Verify new event', async() => {
 
 });
 
-//Update event
-//Delete event
+test('Filter events', async() => {
+    page.goto("https://eventhub.rahulshettyacademy.com/events");
+    await page.waitForLoadState('networkidle');
 
+    let allEvents = await page.locator("#event-card > div > div.left-3 > span").allTextContents();
+    let totalFestivalEventCount = allEvents.filter(e => e.includes("Festival")).length;
+    // console.log(`totalFestivalEventCount ${totalFestivalEventCount}`);
+
+    await page.getByPlaceholder('Search events, venues…').fill("Festival");
+    await page.waitForResponse("https://api.eventhub.rahulshettyacademy.com/api/events?search*");
+
+    await page.locator("#event-card > div > div.left-3 > span").allTextContents();
+
+    let filteredEvents = await page.locator("#event-card > div > div.left-3 > span").allTextContents();
+    let filteredFestivalEventCount = allEvents.filter(e => e.includes("Festival")).length;
+    // console.log(`filteredFestivalEventCount ${filteredFestivalEventCount}`);
+
+    expect(allEvents.length).toBeGreaterThan(filteredEvents.length);
+    expect(totalFestivalEventCount.length).toEqual(filteredFestivalEventCount.length);
+});
+
+test('Update event', async() => {
+    page.goto("https://eventhub.rahulshettyacademy.com/admin/events");
+    await page.waitForLoadState('networkidle');
+
+    const usdFormatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+    });
+
+    let eventRow = await findEvent();
+
+    await eventRow.getByTestId('edit-event-btn').click();
+    await page.getByRole('button', { name: 'Cancel edit' }).waitFor({state: "visible"});
+    await page.getByPlaceholder('0.00').fill("0");
+    await page.getByTestId('add-event-btn').click();
+
+    await page.locator("div[aria-live='polite']").waitFor({state: "visible"});
+    let statusMessage = await page.locator("div[aria-live='polite'] p").textContent();
+    console.log(statusMessage);
+
+    expect(statusMessage).toEqual("Event updated!");
+
+    await page.waitForLoadState('networkidle');
+    await expect(eventRow.locator("td:nth-child(1)")).toHaveText(eventData.title);
+    await expect(eventRow.locator("td:nth-child(2)")).toHaveText(eventData.category);
+    await expect(eventRow.locator("td:nth-child(3)")).toHaveText(eventData.city);
+    await expect(eventRow.locator("td:nth-child(4)")).toHaveText("25 Sept 2026");
+    await expect(eventRow.locator("td:nth-child(5)")).toHaveText(usdFormatter.format(0));
+    await expect(eventRow.locator("td:nth-child(6)")).toHaveText(`${eventData.totalSeats}/${eventData.totalSeats}`);
+
+});
+
+test('Delete event', async() => {
+    page.goto("https://eventhub.rahulshettyacademy.com/admin/events");
+    await page.waitForLoadState('networkidle');
+
+    let eventRow = await findEvent();
+    await eventRow.getByTestId('delete-event-btn').click();
+    await page.getByTestId('confirm-dialog-yes').click();
+
+    await page.locator("div[aria-live='polite']").waitFor({state: "visible"});
+    let statusMessage = await page.locator("div[aria-live='polite'] p").textContent();
+    console.log(statusMessage);
+
+    expect(statusMessage).toEqual("Event deleted");
+    await page.waitForLoadState('networkidle');
+    // console.log(await findEvent())
+
+    eventRow = await findEvent();
+    expect(eventRow).toBeUndefined()
+});
+
+async function findEvent() {
+    let rows = await page.locator("tbody > tr").all();
+    let rowNumber;
+    for(let i = 0; i < rows.length; i++) {
+        let title = await rows[i].locator("td:first-child").textContent();
+        // console.log(title);
+        if(title === eventData.title) {
+            rowNumber = i + 1;
+            break;
+        }
+    }
+
+    if(rowNumber === undefined)
+        return undefined;
+    else
+        return await page.locator(`tbody > tr:nth-child(${rowNumber})`);
+}
