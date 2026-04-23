@@ -45,8 +45,13 @@ test('API valid login', async({request}) => {
         }
     });
 
-    console.log(login);
+    let response = await login.json();
+
+    // console.log(login);
     expect(login.status()).toEqual(200);
+    expect(response.token).toBeDefined();
+    expect(response.token).not.toBeNull();
+    expect(response.token).not.toBe('');
 
 });
 
