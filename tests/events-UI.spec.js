@@ -148,6 +148,43 @@ test('Delete event', async() => {
     expect(eventRow).toBeUndefined()
 });
 
+test('Events page with no events', async() => {
+
+    await page.goto("https://eventhub.rahulshettyacademy.com/");
+
+    await page.route("https://api.eventhub.rahulshettyacademy.com/api/events*",
+        async route => {
+            await route.fulfill({
+                status: 204,
+                body: '',
+            })
+        })
+
+    await page.goto("https://eventhub.rahulshettyacademy.com/events");
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.locator("h3.text-lg")).toHaveText("No events found");
+
+});
+
+test.only('Events admin page with no events', async() => {
+
+    await page.goto("https://eventhub.rahulshettyacademy.com/");
+
+    await page.route("https://api.eventhub.rahulshettyacademy.com/api/events*",
+        async route => {
+            await route.fulfill({
+                status: 204,
+                body: '',
+            })
+        })
+
+    await page.goto("https://eventhub.rahulshettyacademy.com/admin/events");
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.locator("h3.text-lg")).toHaveText("No events yet");
+});
+
 async function findEvent() {
     let rows = await page.locator("tbody > tr").all();
     let rowNumber;
