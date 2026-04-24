@@ -69,3 +69,23 @@ test('Cancel booked event', async() => {
     expect(bookings).not.toContain(confirmationNumber);
 
 });
+
+test('Booked events page with no events booked', async() => {
+
+    await page.goto("https://eventhub.rahulshettyacademy.com/");
+
+    await page.route("https://api.eventhub.rahulshettyacademy.com/api/bookings*",
+        async route => {
+        await route.fulfill({
+            status: 204,
+            body: '',
+        })
+        })
+
+    await page.goto("https://eventhub.rahulshettyacademy.com/bookings");
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.locator("h3.text-lg")).toHaveText("No bookings yet");
+
+
+});
