@@ -1,38 +1,37 @@
 import {test, expect} from "@playwright/test";
+import {LoginPage} from "../pageObjects/LoginPage";
 
+const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
+
+/*
+Can be run in parallel
+ */
 
 test('UI valid login', async({browser}) => {
 
     const context = await browser.newContext();
     const page = await context.newPage();
+    const loginPage = new LoginPage(page);
 
-    await page.goto("https://eventhub.rahulshettyacademy.com/login");
-    await page.locator("#email").fill("john_smith@fake.biz");
-    await page.locator("#password").fill("abc123DEF@");
-    await page.getByRole('button').click();
-    await page.waitForLoadState('networkidle');
+    await loginPage.login(userData.email, userData.password);
 
     await expect(page.getByTestId('logout-btn')).toBeVisible();
 
-    await context.storageState({path: 'loggedInState.json'})
+    await context.storageState({path: 'loggedInState.json'});
 });
 
 test('UI invalid login, short password', async({page}) => {
 
-    await page.goto("https://eventhub.rahulshettyacademy.com/login");
-    await page.locator("#email").fill("john_smith@fake.biz");
-    await page.locator("#password").fill("abc12");
-    await page.getByRole('button').click();
+    const loginPage = new LoginPage(page);
+    await loginPage.login(userData.email, "ABC12");
 
     await expect(page.locator("#password ~ p")).toHaveText("Password must be at least 6 characters");
 });
 
 test('UI invalid login, incorrect password', async({page}) => {
 
-    await page.goto("https://eventhub.rahulshettyacademy.com/login");
-    await page.locator("#email").fill("john_smith@fake.biz");
-    await page.locator("#password").fill("abc123DEF");
-    await page.getByRole('button').click();
+    const loginPage = new LoginPage(page);
+    await loginPage.login(userData.email, "ABC123ABC");
 
     await expect(page.locator("div[aria-live='polite']")).toContainText("Invalid email or password");
 });
@@ -40,8 +39,8 @@ test('UI invalid login, incorrect password', async({page}) => {
 test('API valid login', async({request}) => {
     const login = await request.post('https://api.eventhub.rahulshettyacademy.com/api/auth/login', {
         data: {
-            email: "john_smith@fake.biz",
-            password: "abc123DEF@"
+            email: userData.email,
+            password: userData.password,
         }
     });
 
@@ -58,7 +57,7 @@ test('API valid login', async({request}) => {
 test('API invalid login, incorrect password', async({request}) => {
     const login = await request.post('https://api.eventhub.rahulshettyacademy.com/api/auth/login', {
         data: {
-            email: "john_smith@fake.biz",
+            email: userData.email,
             password: "abc123DEF"
         }
     });
