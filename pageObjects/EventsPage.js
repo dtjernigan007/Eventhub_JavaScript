@@ -8,6 +8,7 @@ class EventsPage {
         this.eventCategories = page.locator("#event-card > div > div.left-3 > span");
         this.searchInput = page.getByPlaceholder('Search events, venues…');
         this.noEventsMessage = page.locator("h3.text-lg");
+        this.bookNowButton = page.getByTestId('book-now-btn');
     }
 
     // Navigation
@@ -53,6 +54,11 @@ class EventsPage {
             }
         }
         return true;
+    }
+
+    // Booking
+    async clickFirstBookNow() {
+        await this.bookNowButton.first().click();
     }
 }
 module.exports = {EventsPage};
