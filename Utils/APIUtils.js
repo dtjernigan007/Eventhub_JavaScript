@@ -123,6 +123,36 @@ class APIUtils {
         return await r.json();
     }
 
+    async deleteAllEvents(token) {
+        const staticIDs = [3, 2, 1];
+        let r = await this.getEvents(token);
+        // console.log(r);
+
+        let eventIDs = [];
+        for(const event of r.data) {
+            eventIDs.push(event.id);
+        }
+        // console.log(eventIDs);
+
+        let idsToRemove = eventIDs.filter(id => !staticIDs.includes(id));
+        for(let i = 0; i < idsToRemove.length; i++) {
+            await this.deleteEvent(token, idsToRemove[i]);
+        }
+    }
+
+    async fulfillCall(page, route, status, body) {
+
+        await page.goto("https://eventhub.rahulshettyacademy.com/");
+
+        await page.route(route,
+            async route => {
+                await route.fulfill({
+                    status: status,
+                    body: body,
+                });
+            });
+    }
+
 
 
 
