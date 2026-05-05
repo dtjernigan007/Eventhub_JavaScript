@@ -1,14 +1,32 @@
-import {test, expect} from "@playwright/test";
+import {test, expect, request} from "@playwright/test";
 import {EventsPage} from "../pageObjects/EventsPage";
+import {APIUtils} from "../Utils/APIUtils";
 import {EventsAdminPage} from "../pageObjects/EventsAdminPage";
 
+let api;
+let token;
 let context;
 let page;
 const eventData = JSON.parse(JSON.stringify(require("../resources/event_data.json")));
 
+
+
+
 /*
-These are intended to be run sequentially
+Can be run in parrallel.
+Mocking API responses to avoid potential issues with calling the /events endpoint since there may be extra events
+added, not added, or deleted, at any given time.
  */
+
+test.beforeAll(async () => {
+    const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
+    const apiContext = await request.newContext();
+    api = new APIUtils(apiContext, userData);
+    token = await api.login();
+    // console.log(token);
+
+    await api.deleteAllEvents(token);
+});
 
 test.beforeEach(async({browser}) => {
     context = await browser.newContext({storageState: 'loggedInState.json'});
@@ -16,9 +34,20 @@ test.beforeEach(async({browser}) => {
     // await page.goto("https://eventhub.rahulshettyacademy.com/");
 })
 
+test.afterAll('Delete All Events', async () => {
+    await api.deleteAllEvents(token);
+});
+
 test('Browse events', async() => {
     const eventsPage = new EventsPage(page);
+
+    const defaultEvents = JSON.stringify(require("../resources/defaultEvents.json"));
+    const route = "https://api.eventhub.rahulshettyacademy.com/api/events*";
+
     let expectedEvents = ["Dilli Diwali Mela", "Hollywood Monsoon Night — Los Angeles", "World Tech Summit"];
+    await page.goto("https://eventhub.rahulshettyacademy.com/");
+
+    await api.fulfillCall(page, route, 200, defaultEvents);
 
     await eventsPage.goto();
     await eventsPage.waitForNetworkIdle();
@@ -58,6 +87,13 @@ test('Add event', async() => {
 test('Verify new event', async() => {
     const eventsAdminPage = new EventsAdminPage(page);
 
+    const mockedEvents = JSON.stringify(require("../resources/verifyEvents.json"));
+    const route = "https://api.eventhub.rahulshettyacademy.com/api/events*";
+
+    await page.goto("https://eventhub.rahulshettyacademy.com/");
+
+    await api.fulfillCall(page, route, 200, mockedEvents);
+
     await eventsAdminPage.goto();
     await eventsAdminPage.waitForNetworkIdle();
 
@@ -70,33 +106,50 @@ test('Verify new event', async() => {
     expect(await eventsAdminPage.getEventSeats(eventRow)).toBe(`${eventData.totalSeats}/${eventData.totalSeats}`);
 });
 
+/*
+The filter does not work properly, not just with Festival but with all categories.
+After a fix is confirmed regression testing can be conducted in the API suite by passing in multiple filters
+and validating the expected results are returned.
+ */
 test('Filter events', async() => {
     const eventsPage = new EventsPage(page);
+
+    const mockedEvents = JSON.stringify(require("../resources/verifyEvents.json"));
+    //don't regex the ending of the URL with * because the filter is back end not front end code.
+    const route = "https://api.eventhub.rahulshettyacademy.com/api/events?page=1&limit=12";
+    await page.goto("https://eventhub.rahulshettyacademy.com/");
+
+    // await page.pause();
+
+    await api.fulfillCall(page, route, 200, mockedEvents);
 
     await eventsPage.goto();
     await eventsPage.waitForNetworkIdle();
 
     let allEvents = await eventsPage.getAllEventCategories();
     let totalFestivalEventCount = allEvents.filter(e => e.includes("Festival")).length;
-    // console.log(`totalFestivalEventCount ${totalFestivalEventCount}`);
 
+    console.log(`totalFestivalEventCount ${totalFestivalEventCount}`);
     await eventsPage.search("Festival");
 
     let filteredEvents = await eventsPage.getAllEventCategories();
-    let filteredFestivalEventCount = allEvents.filter(e => e.includes("Festival")).length;
-    // console.log(`filteredFestivalEventCount ${filteredFestivalEventCount}`);
+    let filteredFestivalEventCount = filteredEvents.filter(e => e.includes("Festival")).length;
+    console.log(`filteredFestivalEventCount ${filteredFestivalEventCount}`);
 
     expect(allEvents.length).toBeGreaterThan(filteredEvents.length);
-    expect(totalFestivalEventCount.length).toEqual(filteredFestivalEventCount.length);
+    expect(totalFestivalEventCount).toEqual(filteredFestivalEventCount);
 });
 
 test('Update event', async() => {
     const eventsAdminPage = new EventsAdminPage(page);
 
+    const eventToEdit = JSON.parse(JSON.stringify(require("../resources/eventToUpdate.json")));
+    let r = api.createEvent(token, eventToEdit);
+
     await eventsAdminPage.goto();
     await eventsAdminPage.waitForNetworkIdle();
 
-    let eventRow = await eventsAdminPage.findEvent(eventData.title);
+    let eventRow = await eventsAdminPage.findEvent(eventToEdit.title);
 
     await eventsAdminPage.editEvent(eventRow);
     await eventsAdminPage.fillPrice("0");
@@ -104,26 +157,42 @@ test('Update event', async() => {
 
     let statusMessage = await eventsAdminPage.getStatusMessage();
     console.log(statusMessage);
-
     expect(statusMessage).toEqual("Event updated!");
+    // await page.pause();
 
     await eventsAdminPage.waitForNetworkIdle();
-    expect(await eventsAdminPage.getEventTitle(eventRow)).toBe(eventData.title);
-    expect(await eventsAdminPage.getEventCategory(eventRow)).toBe(eventData.category);
-    expect(await eventsAdminPage.getEventCity(eventRow)).toBe(eventData.city);
-    expect(await eventsAdminPage.getEventDate(eventRow)).toBe("25 Sept 2026");
-    expect(await eventsAdminPage.getEventPrice(eventRow)).toBe(eventsAdminPage.formatPrice(0));
-    expect(await eventsAdminPage.getEventSeats(eventRow)).toBe(`${eventData.totalSeats}/${eventData.totalSeats}`);
+
+    /*
+    The page object model locators ended up referencing the wrong row since events were being added and removed while this test
+    was in progress. Even re-defining eventRow after the update would still have it looking at the wrong row.
+    XPath works here, though it is not pretty.
+     */
+
+    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']")).toHaveText(eventToEdit.title);
+    // expect(await eventsAdminPage.getEventTitle(eventRow)).toBe(eventToEdit.title);
+    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[1]")).toHaveText(eventToEdit.category);
+    // expect(await eventsAdminPage.getEventCategory(eventRow)).toBe(eventToEdit.category);
+    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[2]")).toHaveText(eventToEdit.city);
+    // expect(await eventsAdminPage.getEventCity(eventRow)).toBe(eventToEdit.city);
+    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[3]")).toHaveText("25 Sept 2026");
+    // expect(await eventsAdminPage.getEventDate(eventRow)).toBe("25 Sept 2026");
+    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[4]")).toHaveText(eventsAdminPage.formatPrice(0));
+    // expect(await eventsAdminPage.getEventPrice(eventRow)).toBe(eventsAdminPage.formatPrice(0));
+    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[5]")).toHaveText(`${eventToEdit.totalSeats}/${eventToEdit.totalSeats}`);
+    // expect(await eventsAdminPage.getEventSeats(eventRow)).toBe(`${eventToEdit.totalSeats}/${eventToEdit.totalSeats}`);
 
 });
 
 test('Delete event', async() => {
     const eventsAdminPage = new EventsAdminPage(page);
 
+    const eventToDelete = JSON.parse(JSON.stringify(require("../resources/eventToDelete.json")));
+    let r = api.createEvent(token, eventToDelete);
+
     await eventsAdminPage.goto();
     await eventsAdminPage.waitForNetworkIdle();
 
-    let eventRow = await eventsAdminPage.findEvent(eventData.title);
+    let eventRow = await eventsAdminPage.findEvent(eventToDelete.title);
     await eventsAdminPage.deleteEvent(eventRow);
 
     let statusMessage = await eventsAdminPage.getStatusMessage();
@@ -131,9 +200,8 @@ test('Delete event', async() => {
 
     expect(statusMessage).toEqual("Event deleted");
     await eventsAdminPage.waitForNetworkIdle();
-    // console.log(await findEvent())
 
-    eventRow = await eventsAdminPage.findEvent(eventData.title);
+    eventRow = await eventsAdminPage.findEvent(eventToDelete.title);
     expect(eventRow).toBeUndefined()
 });
 
