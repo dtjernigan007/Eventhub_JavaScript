@@ -8,6 +8,7 @@ let token;
 let context;
 let page;
 const eventData = JSON.parse(JSON.stringify(require("../resources/event_data.json")));
+// const eventData = eventData.add;
 
 /*
 Can be run in parrallel.
@@ -141,35 +142,45 @@ test('Filter events', async() => {
 
 test('Update event', async() => {
     const eventsAdminPage = new EventsAdminPage(page);
+    const eventToEdit = JSON.parse(JSON.stringify(require("../resources/eventToUpdate.json"))).initial;
+    const newEventDetails  = JSON.parse(JSON.stringify(require("../resources/eventToUpdate.json"))).update;
 
-    const eventToEdit = JSON.parse(JSON.stringify(require("../resources/eventToUpdate.json")));
     await api.createEvent(token, eventToEdit);
 
     await eventsAdminPage.goto();
     await eventsAdminPage.waitForNetworkIdle();
 
     let eventCell = eventsAdminPage.findEvent(eventToEdit.title);
-
     await eventsAdminPage.editEvent(eventCell);
-    await eventsAdminPage.fillPrice("0");
+    await eventsAdminPage.fillEventTitle(newEventDetails.title);
+    await eventsAdminPage.fillDescription(newEventDetails.description);
+    await eventsAdminPage.selectCategory(newEventDetails.category);
+    await eventsAdminPage.fillCity(newEventDetails.city);
+    await eventsAdminPage.fillVenue(newEventDetails.venue);
+
+    await eventsAdminPage.dateTimeInput.click();
+    await eventsAdminPage.dateTimeInput.pressSequentially("09262026", {delay: 100});
+    await eventsAdminPage.dateTimeInput.press('Tab');
+    await eventsAdminPage.dateTimeInput.pressSequentially("0400PM", {delay: 100});
+
+    await eventsAdminPage.fillPrice(newEventDetails.price.toString());
+    await eventsAdminPage.fillTotalSeats(newEventDetails.totalSeats.toString());
+    await eventsAdminPage.fillImageUrl(newEventDetails.imageUrl);
     await eventsAdminPage.clickUpdateEvent();
 
     let statusMessage = await eventsAdminPage.getStatusMessage();
     console.log(statusMessage);
     expect(statusMessage).toEqual("Event updated!");
-
     await eventsAdminPage.waitForNetworkIdle();
 
     // Re-find the event cell after update to ensure we have the latest reference
-    eventCell = eventsAdminPage.findEvent(eventToEdit.title);
-
-    await eventsAdminPage.verifyEventTitle(eventCell, eventToEdit.title);
-    await eventsAdminPage.verifyEventCategory(eventCell, eventToEdit.category);
-    await eventsAdminPage.verifyEventCity(eventCell, eventToEdit.city);
-    await eventsAdminPage.verifyEventDate(eventCell, "25 Sept 2026");
-    await eventsAdminPage.verifyEventPrice(eventCell, eventsAdminPage.formatPrice(0));
-    await eventsAdminPage.verifyEventSeats(eventCell, `${eventToEdit.totalSeats}/${eventToEdit.totalSeats}`);
-
+    eventCell = eventsAdminPage.findEvent(newEventDetails.title);
+    await eventsAdminPage.verifyEventTitle(eventCell, newEventDetails.title);
+    await eventsAdminPage.verifyEventCategory(eventCell, newEventDetails.category);
+    await eventsAdminPage.verifyEventCity(eventCell, newEventDetails.city);
+    await eventsAdminPage.verifyEventDate(eventCell, "26 Sept 2026");
+    await eventsAdminPage.verifyEventPrice(eventCell, eventsAdminPage.formatPrice(newEventDetails.price));
+    await eventsAdminPage.verifyEventSeats(eventCell, `${newEventDetails.totalSeats}/${newEventDetails.totalSeats}`);
 });
 
 test('Delete event', async() => {
