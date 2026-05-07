@@ -9,9 +9,6 @@ let context;
 let page;
 const eventData = JSON.parse(JSON.stringify(require("../resources/event_data.json")));
 
-
-
-
 /*
 Can be run in parrallel.
 Mocking API responses to avoid potential issues with calling the /events endpoint since there may be extra events
@@ -34,9 +31,11 @@ test.beforeEach(async({browser}) => {
     // await page.goto("https://eventhub.rahulshettyacademy.com/");
 })
 
-test.afterAll('Delete All Events', async () => {
-    await api.deleteAllEvents(token);
-});
+// The afterAll block can be uncommented if desired. Having some test artifacts left behind could be useful for manual
+// testing though. beforeAll will clear them regardless.
+// test.afterAll('Delete All Events', async () => {
+//     await api.deleteAllEvents(token);
+// });
 
 test('Browse events', async() => {
     const eventsPage = new EventsPage(page);
@@ -97,13 +96,13 @@ test('Verify new event', async() => {
     await eventsAdminPage.goto();
     await eventsAdminPage.waitForNetworkIdle();
 
-    let eventRow = await eventsAdminPage.findEvent(eventData.title);
-    expect(await eventsAdminPage.getEventTitle(eventRow)).toBe(eventData.title);
-    expect(await eventsAdminPage.getEventCategory(eventRow)).toBe(eventData.category);
-    expect(await eventsAdminPage.getEventCity(eventRow)).toBe(eventData.city);
-    expect(await eventsAdminPage.getEventDate(eventRow)).toBe("25 Sept 2026");
-    expect(await eventsAdminPage.getEventPrice(eventRow)).toBe(eventsAdminPage.formatPrice(eventData.price));
-    expect(await eventsAdminPage.getEventSeats(eventRow)).toBe(`${eventData.totalSeats}/${eventData.totalSeats}`);
+    let eventCell = eventsAdminPage.findEvent(eventData.title);
+    await eventsAdminPage.verifyEventTitle(eventCell, eventData.title);
+    await eventsAdminPage.verifyEventCategory(eventCell, eventData.category);
+    await eventsAdminPage.verifyEventCity(eventCell, eventData.city);
+    await eventsAdminPage.verifyEventDate(eventCell, "25 Sept 2026");
+    await eventsAdminPage.verifyEventPrice(eventCell, eventsAdminPage.formatPrice(eventData.price));
+    await eventsAdminPage.verifyEventSeats(eventCell, `${eventData.totalSeats}/${eventData.totalSeats}`);
 });
 
 /*
@@ -144,42 +143,32 @@ test('Update event', async() => {
     const eventsAdminPage = new EventsAdminPage(page);
 
     const eventToEdit = JSON.parse(JSON.stringify(require("../resources/eventToUpdate.json")));
-    let r = api.createEvent(token, eventToEdit);
+    await api.createEvent(token, eventToEdit);
 
     await eventsAdminPage.goto();
     await eventsAdminPage.waitForNetworkIdle();
 
-    let eventRow = await eventsAdminPage.findEvent(eventToEdit.title);
+    let eventCell = eventsAdminPage.findEvent(eventToEdit.title);
 
-    await eventsAdminPage.editEvent(eventRow);
+    await eventsAdminPage.editEvent(eventCell);
     await eventsAdminPage.fillPrice("0");
     await eventsAdminPage.clickUpdateEvent();
 
     let statusMessage = await eventsAdminPage.getStatusMessage();
     console.log(statusMessage);
     expect(statusMessage).toEqual("Event updated!");
-    // await page.pause();
 
     await eventsAdminPage.waitForNetworkIdle();
 
-    /*
-    The page object model locators ended up referencing the wrong row since events were being added and removed while this test
-    was in progress. Even re-defining eventRow after the update would still have it looking at the wrong row.
-    XPath works here, though it is not pretty.
-     */
+    // Re-find the event cell after update to ensure we have the latest reference
+    eventCell = eventsAdminPage.findEvent(eventToEdit.title);
 
-    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']")).toHaveText(eventToEdit.title);
-    // expect(await eventsAdminPage.getEventTitle(eventRow)).toBe(eventToEdit.title);
-    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[1]")).toHaveText(eventToEdit.category);
-    // expect(await eventsAdminPage.getEventCategory(eventRow)).toBe(eventToEdit.category);
-    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[2]")).toHaveText(eventToEdit.city);
-    // expect(await eventsAdminPage.getEventCity(eventRow)).toBe(eventToEdit.city);
-    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[3]")).toHaveText("25 Sept 2026");
-    // expect(await eventsAdminPage.getEventDate(eventRow)).toBe("25 Sept 2026");
-    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[4]")).toHaveText(eventsAdminPage.formatPrice(0));
-    // expect(await eventsAdminPage.getEventPrice(eventRow)).toBe(eventsAdminPage.formatPrice(0));
-    await expect(page.locator("//td[normalize-space()='" + eventToEdit.title + "']/following-sibling::td[5]")).toHaveText(`${eventToEdit.totalSeats}/${eventToEdit.totalSeats}`);
-    // expect(await eventsAdminPage.getEventSeats(eventRow)).toBe(`${eventToEdit.totalSeats}/${eventToEdit.totalSeats}`);
+    await eventsAdminPage.verifyEventTitle(eventCell, eventToEdit.title);
+    await eventsAdminPage.verifyEventCategory(eventCell, eventToEdit.category);
+    await eventsAdminPage.verifyEventCity(eventCell, eventToEdit.city);
+    await eventsAdminPage.verifyEventDate(eventCell, "25 Sept 2026");
+    await eventsAdminPage.verifyEventPrice(eventCell, eventsAdminPage.formatPrice(0));
+    await eventsAdminPage.verifyEventSeats(eventCell, `${eventToEdit.totalSeats}/${eventToEdit.totalSeats}`);
 
 });
 
@@ -187,13 +176,13 @@ test('Delete event', async() => {
     const eventsAdminPage = new EventsAdminPage(page);
 
     const eventToDelete = JSON.parse(JSON.stringify(require("../resources/eventToDelete.json")));
-    let r = api.createEvent(token, eventToDelete);
+    await api.createEvent(token, eventToDelete);
 
     await eventsAdminPage.goto();
     await eventsAdminPage.waitForNetworkIdle();
 
-    let eventRow = await eventsAdminPage.findEvent(eventToDelete.title);
-    await eventsAdminPage.deleteEvent(eventRow);
+    let eventCell = eventsAdminPage.findEvent(eventToDelete.title);
+    await eventsAdminPage.deleteEvent(eventCell);
 
     let statusMessage = await eventsAdminPage.getStatusMessage();
     console.log(statusMessage);
@@ -201,8 +190,9 @@ test('Delete event', async() => {
     expect(statusMessage).toEqual("Event deleted");
     await eventsAdminPage.waitForNetworkIdle();
 
-    eventRow = await eventsAdminPage.findEvent(eventToDelete.title);
-    expect(eventRow).toBeUndefined()
+    await expect(eventsAdminPage.findEvent(eventToDelete.title)).toHaveCount(0);
+    // eventCell = await eventsAdminPage.findEvent(eventToDelete.title);
+    // expect(eventCell).toBeUndefined()
 });
 
 test('Events page with no events', async() => {
@@ -243,4 +233,3 @@ test('Events admin page with no events', async() => {
 
     await expect(page.locator("h3.text-lg")).toHaveText("No events yet");
 });
-

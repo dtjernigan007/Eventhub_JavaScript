@@ -1,3 +1,5 @@
+const {expect} = require("@playwright/test");
+
 class EventsAdminPage {
     constructor(page) {
         this.page = page;
@@ -122,22 +124,8 @@ class EventsAdminPage {
     }
 
     // Table/Event management
-    async findEvent(eventTitle) {
-        let rows = await this.eventTable.all();
-        let rowNumber;
-
-        for(let i = 0; i < rows.length; i++) {
-            let title = await rows[i].locator("td:first-child").textContent();
-            if(title === eventTitle) {
-                rowNumber = i + 1;
-                break;
-            }
-        }
-
-        if(rowNumber === undefined)
-            return undefined;
-        else
-            return await this.page.locator(`tbody > tr:nth-child(${rowNumber})`);
+    findEvent(eventTitle) {
+        return this.page.locator(`//td[normalize-space()='${eventTitle}']`);
     }
 
     async getEventRow(rowNumber) {
@@ -146,38 +134,62 @@ class EventsAdminPage {
 
     // Event row operations
     async editEvent(eventRow) {
-        await eventRow.getByTestId('edit-event-btn').click();
+        await eventRow.locator('xpath=/following-sibling::td').getByTestId('edit-event-btn').click();
         await this.cancelEditButton.waitFor({state: "visible"});
     }
 
     async deleteEvent(eventRow) {
-        await eventRow.getByTestId('delete-event-btn').click();
+        await eventRow.locator('xpath=/following-sibling::td').getByTestId('delete-event-btn').click();
         await this.confirmDialogYes.click();
     }
 
     // Getters for table cell data
-    async getEventTitle(eventRow) {
-        return await eventRow.locator("td:nth-child(1)").textContent();
+    async getEventTitle(eventCell) {
+        return await eventCell.textContent();
     }
 
-    async getEventCategory(eventRow) {
-        return await eventRow.locator("td:nth-child(2)").textContent();
+    async getEventCategory(eventCell) {
+        return await eventCell.locator('xpath=following-sibling::td[1]').textContent();
     }
 
-    async getEventCity(eventRow) {
-        return await eventRow.locator("td:nth-child(3)").textContent();
+    async getEventCity(eventCell) {
+        return await eventCell.locator('xpath=following-sibling::td[2]').textContent();
     }
 
-    async getEventDate(eventRow) {
-        return await eventRow.locator("td:nth-child(4)").textContent();
+    async getEventDate(eventCell) {
+        return await eventCell.locator('xpath=following-sibling::td[3]').textContent();
     }
 
-    async getEventPrice(eventRow) {
-        return await eventRow.locator("td:nth-child(5)").textContent();
+    getEventPrice(eventCell) {
+        return eventCell.locator('xpath=following-sibling::td[4]');
     }
 
-    async getEventSeats(eventRow) {
-        return await eventRow.locator("td:nth-child(6)").textContent();
+    async getEventSeats(eventCell) {
+        return await eventCell.locator('xpath=following-sibling::td[5]').textContent();
+    }
+
+    async verifyEventTitle(eventCell, expectedTitle) {
+        await expect(eventCell).toContainText(expectedTitle);
+    }
+
+    async verifyEventCategory(eventCell, expectedCategory) {
+        await expect(eventCell.locator('xpath=following-sibling::td[1]')).toHaveText(expectedCategory);
+    }
+
+    async verifyEventCity(eventCell, expectedCity) {
+        await expect(eventCell.locator('xpath=following-sibling::td[2]')).toHaveText(expectedCity);
+    }
+
+    async verifyEventDate(eventCell, expectedDate) {
+        await expect(eventCell.locator('xpath=following-sibling::td[3]')).toHaveText(expectedDate);
+    }
+
+    async verifyEventPrice(eventCell, expectedPrice) {
+        await expect(eventCell.locator('xpath=following-sibling::td[4]')).toHaveText(expectedPrice);
+    }
+
+    async verifyEventSeats(eventCell, expectedSeats) {
+        await expect(eventCell.locator('xpath=following-sibling::td[5]')).toHaveText(expectedSeats);
     }
 
     // Verification helpers
