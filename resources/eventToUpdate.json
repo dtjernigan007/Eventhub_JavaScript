@@ -1,11 +1,24 @@
 {
-  "title": "Craft Fair & Art Showcase",
-  "description": "Craft Fair & Art Showcase",
-  "category": "Craft Fair",
-  "venue": "Freemont Street",
-  "city": "Las Vegas",
-  "eventDate": "2026-09-25T09:00:00.000Z",
-  "price": 250,
-  "totalSeats": 5000,
-  "imageUrl": "https://lansdaleumc.org/wp-content/uploads/2022/09/Craft-Fair.png"
+  "initial" : {
+    "title": "Craft Fair & Art Showcase",
+    "description": "Craft Fair & Art Showcase",
+    "category": "Craft Fair",
+    "venue": "Freemont Street",
+    "city": "Las Vegas",
+    "eventDate": "2026-09-25T09:00:00.000Z",
+    "price": 250,
+    "totalSeats": 5000,
+    "imageUrl": "https://lansdaleumc.org/wp-content/uploads/2022/09/Craft-Fair.png"
+  },
+  "update" : {
+    "title": "Art Showcase & Craft Fair",
+    "description": "Art Showcase & Craft Fair",
+    "category": "Festival",
+    "venue": "The Embarcadero",
+    "city": "San Francisco",
+    "eventDate": "2026-09-26T09:00:00.000Z",
+    "price": 350,
+    "totalSeats": 4500,
+    "imageUrl": "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800"
+  }
 }
