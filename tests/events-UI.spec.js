@@ -1,14 +1,8 @@
-import {test, expect, request} from "@playwright/test";
-import {EventsPage} from "../pageObjects/EventsPage";
-import {APIUtils} from "../Utils/APIUtils";
-import {EventsAdminPage} from "../pageObjects/EventsAdminPage";
+import {test, expect} from '../Utils/fixtures';
+import {EventsPage} from '../pageObjects/EventsPage';
+import {EventsAdminPage} from '../pageObjects/EventsAdminPage';
 
-let api;
-let token;
-let context;
-let page;
-const eventData = JSON.parse(JSON.stringify(require("../resources/event_data.json")));
-// const eventData = eventData.add;
+const eventData = require('../resources/event_data.json');
 
 /*
 Can be run in parrallel.
@@ -16,21 +10,7 @@ Mocking API responses to avoid potential issues with calling the /events endpoin
 added, not added, or deleted, at any given time.
  */
 
-test.beforeAll(async () => {
-    const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
-    const apiContext = await request.newContext();
-    api = new APIUtils(apiContext, userData);
-    token = await api.login();
-    // console.log(token);
 
-    await api.deleteAllEvents(token);
-});
-
-test.beforeEach(async({browser}) => {
-    context = await browser.newContext({storageState: 'loggedInState.json'});
-    page = await context.newPage();
-    // await page.goto("https://eventhub.rahulshettyacademy.com/");
-})
 
 // The afterAll block can be uncommented if desired. Having some test artifacts left behind could be useful for manual
 // testing though. beforeAll will clear them regardless.
@@ -38,27 +18,26 @@ test.beforeEach(async({browser}) => {
 //     await api.deleteAllEvents(token);
 // });
 
-test('Browse events', async() => {
+test.beforeAll(async ({ api }) => {
+    await api.deleteAllEvents();         // no token arg needed — it's on this.token
+});
+
+test('Browse events', async ({page, api}) => {
     const eventsPage = new EventsPage(page);
-
-    const defaultEvents = JSON.stringify(require("../resources/defaultEvents.json"));
-    const route = "https://api.eventhub.rahulshettyacademy.com/api/events*";
-
-    let expectedEvents = ["Dilli Diwali Mela", "Hollywood Monsoon Night — Los Angeles", "World Tech Summit"];
-    await page.goto("https://eventhub.rahulshettyacademy.com/");
+    const defaultEvents = JSON.stringify(require('../resources/defaultEvents.json'));
+    const route = 'https://api.eventhub.rahulshettyacademy.com/api/events*';
+    const expected = ['Dilli Diwali Mela', 'Hollywood Monsoon Night — Los Angeles', 'World Tech Summit'];
 
     await api.fulfillCall(page, route, 200, defaultEvents);
-
     await eventsPage.goto();
     await eventsPage.waitForNetworkIdle();
 
-    for(let i = 0; i < expectedEvents.length; i++) {
-        let eventName = await eventsPage.getEventCardText(i);
-        expect(eventName).toEqual(expectedEvents[i]);
+    for (let i = 0; i < expected.length; i++) {
+        expect(await eventsPage.getEventCardText(i)).toEqual(expected[i]);
     }
 });
 
-test('Add event', async() => {
+test('Add event', async({page}) => {
     const eventsAdminPage = new EventsAdminPage(page);
 
     await eventsAdminPage.goto();
@@ -84,7 +63,7 @@ test('Add event', async() => {
     expect(statusMessage).toEqual("Event created!");
 });
 
-test('Verify new event', async() => {
+test('Verify new event', async({page, api}) => {
     const eventsAdminPage = new EventsAdminPage(page);
 
     const mockedEvents = JSON.stringify(require("../resources/verifyEvents.json"));
@@ -111,7 +90,7 @@ The filter does not work properly, not just with Festival but with all categorie
 After a fix is confirmed regression testing can be conducted in the API suite by passing in multiple filters
 and validating the expected results are returned.
  */
-test('Filter events', async() => {
+test('Filter events', async({page, api}) => {
     const eventsPage = new EventsPage(page);
 
     const mockedEvents = JSON.stringify(require("../resources/verifyEvents.json"));
@@ -140,12 +119,12 @@ test('Filter events', async() => {
     expect(totalFestivalEventCount).toEqual(filteredFestivalEventCount);
 });
 
-test('Update event', async() => {
+test('Update event', async({page, api}) => {
     const eventsAdminPage = new EventsAdminPage(page);
     const eventToEdit = JSON.parse(JSON.stringify(require("../resources/eventToUpdate.json"))).initial;
     const newEventDetails  = JSON.parse(JSON.stringify(require("../resources/eventToUpdate.json"))).update;
 
-    await api.createEvent(token, eventToEdit);
+    await api.createEvent(eventToEdit);
 
     await eventsAdminPage.goto();
     await eventsAdminPage.waitForNetworkIdle();
@@ -183,11 +162,11 @@ test('Update event', async() => {
     await eventsAdminPage.verifyEventSeats(eventCell, `${newEventDetails.totalSeats}/${newEventDetails.totalSeats}`);
 });
 
-test('Delete event', async() => {
+test('Delete event', async({page, api}) => {
     const eventsAdminPage = new EventsAdminPage(page);
 
     const eventToDelete = JSON.parse(JSON.stringify(require("../resources/eventToDelete.json")));
-    await api.createEvent(token, eventToDelete);
+    await api.createEvent(eventToDelete);
 
     await eventsAdminPage.goto();
     await eventsAdminPage.waitForNetworkIdle();
@@ -206,7 +185,7 @@ test('Delete event', async() => {
     // expect(eventCell).toBeUndefined()
 });
 
-test('Events page with no events', async() => {
+test('Events page with no events', async({page}) => {
     const eventsPage = new EventsPage(page);
 
     await page.goto("https://eventhub.rahulshettyacademy.com/");
@@ -226,7 +205,7 @@ test('Events page with no events', async() => {
 
 });
 
-test('Events admin page with no events', async() => {
+test('Events admin page with no events', async({page}) => {
     const eventsAdminPage = new EventsAdminPage(page);
 
     await page.goto("https://eventhub.rahulshettyacademy.com/");
