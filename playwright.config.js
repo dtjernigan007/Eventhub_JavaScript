@@ -13,6 +13,9 @@ import { defineConfig} from '@playwright/test';
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
+  //Validates and regenerates loggedInState.json for browser tests
+  globalSetup: './utils/globalSetup.js',
+
   testDir: './tests',
   /* Run tests in files in parallel */
   fullyParallel: true,
