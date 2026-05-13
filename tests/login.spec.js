@@ -17,7 +17,8 @@ test('UI valid login', async({browser}) => {
 
     await expect(page.getByTestId('logout-btn')).toBeVisible();
 
-    await context.storageState({path: 'loggedInState.json'});
+    //No longer needed, handled in globalSetup.js. Leaving here for now just in case...
+    // await context.storageState({path: 'loggedInState.json'});
 });
 
 test('UI invalid login, short password', async({page}) => {
