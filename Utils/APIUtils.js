@@ -16,116 +16,117 @@ class APIUtils {
         });
 
         let loginResponse = await r.json();
-        return loginResponse.token;
+        this.token = loginResponse.token;
+        // return loginResponse.token;
     }
 
-    async getEvents(token) {
+    async getEvents() {
         let r = await this.apiContext.get(`${this.baseURL}/events`, {
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${this.token}`
             }
         });
         return await r.json();
     }
 
-    async getEventDetails(token, id) {
+    async getEventDetails(id) {
 
         let r = await this.apiContext.get(`${this.baseURL}/events/${id}`, {
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${this.token}`
             }
         });
         return await r.json();
     }
 
-    async bookEvent(token, eventID, numTix){
+    async bookEvent(eventID, numTix){
         let body = {customerName: this.userData.name, customerEmail: this.userData.email, customerPhone: this.userData.phone, quantity: numTix, eventId: eventID};
 
         let r = await this.apiContext.post(`${this.baseURL}/bookings`, {
             data: body,
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${this.token}`
             }
         });
         return await r.json();
     }
 
-    async getBookings(token) {
+    async getBookings() {
 
         let r = await this.apiContext.get(`${this.baseURL}/bookings`, {
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${this.token}`
             }
         });
         return await r.json();
     }
 
-    async cancelBooking(token, id) {
+    async cancelBooking(id) {
 
         let r = await this.apiContext.delete(`${this.baseURL}/bookings/${id}`, {
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${this.token}`
             }
         });
         return await r.json();
     }
 
-    async deleteAllBookings(token) {
+    async deleteAllBookings() {
         let r = await this.apiContext.delete(`${this.baseURL}/bookings`, {
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${this.token}`
             }
         });
 
         return await r.json();
     }
 
-    async createEvent(token, eventData) {
+    async createEvent(eventData) {
 
         let r = await this.apiContext.post(`${this.baseURL}/events`, {
             data: eventData,
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${this.token}`
             }
         });
 
         return await r.json();
     }
 
-    async updateEvent(token, id, updateData) {
+    async updateEvent(id, updateData) {
 
         let r = await this.apiContext.put(`${this.baseURL}/events/${id}`, {
             data: updateData,
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${this.token}`
             }
         });
 
         return await r.json();
     }
 
-    async deleteEvent(token, id) {
+    async deleteEvent(id) {
 
         let r = await this.apiContext.delete(`${this.baseURL}/events/${id}`, {
             headers: {
                 "Accept": "application/json",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${this.token}`
             }
         });
         return await r.json();
     }
 
-    async deleteAllEvents(token) {
+    async deleteAllEvents() {
         const staticIDs = [3, 2, 1];
-        let r = await this.getEvents(token);
+        let r = await this.getEvents();
         // console.log(r);
 
         let eventIDs = [];
@@ -136,7 +137,7 @@ class APIUtils {
 
         let idsToRemove = eventIDs.filter(id => !staticIDs.includes(id));
         for(let i = 0; i < idsToRemove.length; i++) {
-            await this.deleteEvent(token, idsToRemove[i]);
+            await this.deleteEvent(idsToRemove[i]);
         }
     }
 
