@@ -17,7 +17,6 @@ class APIUtils {
 
         let loginResponse = await r.json();
         this.token = loginResponse.token;
-        // return loginResponse.token;
     }
 
     async getEvents() {
@@ -128,12 +127,7 @@ class APIUtils {
         const staticIDs = [3, 2, 1];
         let r = await this.getEvents();
         // console.log(r);
-
-        let eventIDs = [];
-        for(const event of r.data) {
-            eventIDs.push(event.id);
-        }
-        // console.log(eventIDs);
+        let eventIDs = r.data.map(e => e.id);
 
         let idsToRemove = eventIDs.filter(id => !staticIDs.includes(id));
         for(let i = 0; i < idsToRemove.length; i++) {
