@@ -1,66 +1,46 @@
-import {test, expect, request} from "@playwright/test";
-import {APIUtils} from "../Utils/APIUtils";
+import {test, expect} from '../Utils/fixtures';
 
 // const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
-let eventId = 3;
-let numTix = 2;
-let api;
-let token;
 
 
-test.beforeAll(async () => {
+test.beforeAll(async ({api}) =>{
+    let response = await api.deleteAllBookings();
+    console.log(response)
+});
 
-    const apiContext = await request.newContext();
-    const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
-    api = new APIUtils(apiContext, userData);
-    token = await api.login();
-    // console.log(token);
-})
-
-test('Book Event', async() => {
-
-    let initialDetails = await api.getEventDetails(token, eventId);
+//In order to run in parallel the tests needed to be consolidated into 1 test.
+test('Book and Cancel Event', async({api}) => {
+    let eventId = 3;
+    let numTix = 2;
+    let initialDetails = await api.getEventDetails(eventId);
     // console.log(initialDetails);
     let availSeats = initialDetails.data.availableSeats;
 
-    let response = await api.bookEvent(token, eventId, numTix);
+    let response = await api.bookEvent(eventId, numTix);
     expect(response.message).toEqual("Booking confirmed!")
 
-    let updatedDetails = await api.getEventDetails(token, eventId);
+    let updatedDetails = await api.getEventDetails(eventId);
     // console.log(updatedDetails);
     let updatedAvailSeats = updatedDetails.data.availableSeats;
 
-    expect(updatedAvailSeats).toEqual(availSeats - numTix);
-});
+    expect.soft(updatedAvailSeats).toEqual(availSeats - numTix);
 
-test('Cancel booking', async() => {
+    let bookings = await api.getBookings();
+    // console.log(bookings);
 
-    let response = await api.getBookings(token);
-    console.log(response);
-
-    let numBookings = response.pagination.total;
-
-    expect(numBookings).toBeGreaterThan(0);
+    let numBookings = bookings.pagination.total;
+    expect.soft(numBookings).toEqual(1);
 
     let bookingId;
     if(numBookings > 0)
-        bookingId = response.data[0].id;
+        bookingId = bookings.data[0].id;
 
-    let cancel = await api.cancelBooking(token, bookingId);
-    console.log(cancel);
+    let cancel = await api.cancelBooking(bookingId);
+    // console.log(cancel);
 
-    expect(cancel.message).toEqual("Booking cancelled");
+    expect.soft(cancel.message).toEqual("Booking cancelled");
 
-    let updatedBookings = await api.getBookings(token);
+    let updatedBookings = await api.getBookings();
     let updatedNumBookings = updatedBookings.pagination.total;
     expect(updatedNumBookings).toEqual(numBookings - 1);
-
-});
-
-test.afterAll(async () => {
-
-    let response = await api.deleteAllBookings(token);
-    console.log(response)
-
-
 });
