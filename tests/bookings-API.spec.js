@@ -1,8 +1,5 @@
 import {test, expect} from '../Utils/fixtures';
 
-// const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
-
-
 test.beforeAll(async ({api}) =>{
     let response = await api.deleteAllBookings();
     console.log(response)
