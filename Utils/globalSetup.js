@@ -5,17 +5,17 @@ import {LoginPage} from "../pageObjects/LoginPage";
 const userData = require('../resources/user_data.json');
 
 export default async function globalSetup() {
-    if (isStorageStateValid()) return;  // sync, no network needed
+    if (isStorageStateValid()) return;
 
     console.log('Browser session expired or missing — logging in...');
     await regenerateStorageState();
 }
 
 function isStorageStateValid() {
-    if (!fs.existsSync('../loggedInState.json')) return false;
+    if (!fs.existsSync('loggedInState.json')) return false;
 
     try {
-        const state = JSON.parse(fs.readFileSync('../loggedInState.json', 'utf-8'));
+        const state = JSON.parse(fs.readFileSync('loggedInState.json', 'utf-8'));
         const origin = state.origins?.find(o => o.origin === 'https://eventhub.rahulshettyacademy.com');
         const tokenEntry = origin?.localStorage?.find(e => e.name === 'eventhub_token');
 
