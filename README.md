@@ -30,7 +30,7 @@ TC8: Events admin page with no events - Edge case, the default events cannot be 
 Scenario: Event booking functions. Refactoring required to allow parallel execution.\
 Preconditions: No current booked events. The test cleans up after itself. TODO: Add a beforeAll block to remove any pre-exsiting bookings
 
-TC1: Book an event
-TC2: Confirm event was booked
-TC3: Cancel booked event
+TC1: Book an event\
+TC2: Confirm event was booked\
+TC3: Cancel booked event\
 TC4: Booked events page with no events booked - mock API response to ensure there are no booked events
