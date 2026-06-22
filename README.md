@@ -1,5 +1,7 @@
 https://eventhub.rahulshettyacademy.com - Automation practice site featuring event management and ticket booking via UI and API.
 
+In order to run the tests, register an account and add the email and password to resources/userdata.json. A valid email address is NOT required, so just make something up.
+
 ### Hybrid Tests ###
 ### login.spec.js ###
 
@@ -28,9 +30,27 @@ TC8: Events admin page with no events - Edge case, the default events cannot be 
 
 ### bookings-UI.spec.js ###
 Scenario: Event booking functions. Refactoring required to allow parallel execution.\
-Preconditions: No current booked events. The test cleans up after itself. TODO: Add a beforeAll block to remove any pre-exsiting bookings
+Preconditions: No current booked events. The beforeAll block removes any pre-exsiting bookings.
 
 TC1: Book an event\
 TC2: Confirm event was booked\
 TC3: Cancel booked event\
 TC4: Booked events page with no events booked - mock API response to ensure there are no booked events
+
+### API Tests ###
+
+### events-API.spec.js ###
+Scenario: Event administration function API calls. Can be run in parallel, each test creates the event it will work with.\
+Preconditions: Start with only the default events. The beforeAll block will delete any non-default events prior to the test run.
+
+TC1: Verify default events\
+TC2: Add and verify the new event details\
+TC3: Add and then update event details\
+TC4: Add and then delete an event
+
+#### bookings-API.spec.js ###
+Scenario: Booking administration function API calls.\
+Preconditions: No current booked events. The beforeAll block removes any pre-exsiting bookings.
+
+TC1: Book and then cancel the booking\
+Note: In order for this to run in parallel mode tests were consolidated. Soft assertions were used on non-critical/blocker assertions to let the test continue to run if there's a failure.
