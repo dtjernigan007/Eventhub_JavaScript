@@ -2,8 +2,6 @@ import { chromium } from '@playwright/test';
 import * as fs from 'fs';
 import {LoginPage} from "../pageObjects/LoginPage";
 
-const userData = require('../resources/user_data.json');
-
 export default async function globalSetup() {
     if (isStorageStateValid()) return;
 
@@ -37,6 +35,7 @@ function isStorageStateValid() {
 }
 
 async function regenerateStorageState() {
+    const userData = require('../resources/user_data.json');
     const browser = await chromium.launch();
     const context = await browser.newContext();
     const page = await context.newPage();
