@@ -1,18 +1,4 @@
 import {test, expect} from '../Utils/fixtures';
-// import {APIUtils} from "../Utils/APIUtils";
-// const userData = JSON.parse(JSON.stringify(require("../resources/user_data.json")));
-
-// let api;
-// let token;
-const eventData = JSON.parse(JSON.stringify(require("../resources/event_data.json")));
-
-// test.beforeAll(async () => {
-//
-//     const apiContext = await request.newContext();
-//     api = new APIUtils(apiContext, userData);
-//     token = await api.login();
-//     // console.log(token);
-// });
 
 test.beforeAll(async ({ api }) => {
     await api.deleteAllEvents();         // no token arg needed — it's on this.token
@@ -30,6 +16,7 @@ test('Verify Default Events', async({api}) => {
 });
 
 test('Add & Verify new event', async({api}) => {
+    const eventData = JSON.parse(JSON.stringify(require("../resources/event_data.json")));
     let response = await api.createEvent(eventData);
     // console.log(response)
     expect(response.message).toEqual("Event created successfully");
